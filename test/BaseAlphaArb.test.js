@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { AaveV3BaseSepolia } = require('@bgd-labs/aave-address-book');
+const { AaveV3Base } = require('@bgd-labs/aave-address-book');
 const { impersonateAccount, stopImpersonatingAccount, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("BaseAlphaArb", function () {
@@ -12,12 +12,12 @@ describe("BaseAlphaArb", function () {
         const usdc = await ethers.getContractAt("IERC20", usdcAddress);
 
         // Impersonate Aave Pool to initiate the flash loan
-        await impersonateAccount(AaveV3BaseSepolia.POOL);
-        const aavePool = await ethers.getSigner(AaveV3BaseSepolia.POOL);
+        await impersonateAccount(AaveV3Base.POOL);
+        const aavePool = await ethers.getSigner(AaveV3Base.POOL);
 
         // Deploy our BaseAlphaArb contract
         const BaseAlphaArb = await ethers.getContractFactory("BaseAlphaArb");
-        const baseAlphaArb = await BaseAlphaArb.deploy(AaveV3BaseSepolia.POOL_ADDRESSES_PROVIDER);
+        const baseAlphaArb = await BaseAlphaArb.deploy(AaveV3Base.POOL_ADDRESSES_PROVIDER);
         await baseAlphaArb.waitForDeployment();
 
         // Deploy the MockAggregator

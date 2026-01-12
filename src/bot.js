@@ -1,12 +1,14 @@
 const { ethers } = require('ethers');
 const config = require('./config');
+const { loadBalancer } = require('./provider');
 const { log, sleep, withErrorHandling } = require('./utils');
 const { scanAllHubs } = require('./opportunityScanner');
 const aggregatorService = require('./aggregatorService');
 const { sendPrivateTransaction } = require('./mevProtection');
 
-const provider = new ethers.JsonRpcProvider(config.rpcUrl);
-const wallet = new ethers.Wallet(config.auth.privateKey, provider);
+// The wallet needs a provider, so we'll start with the first one and can rotate if needed.
+const initialProvider = loadBalancer.getNextProvider();
+const wallet = new ethers.Wallet(config.auth.privateKey, initialProvider);
 
 const POLLING_INTERVAL = 4000; // 4 seconds
 

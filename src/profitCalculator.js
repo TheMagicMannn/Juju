@@ -2,8 +2,8 @@ const { ethers } = require('ethers');
 const config = require('./config');
 const { log, withErrorHandling } = require('./utils');
 const { isHighConviction } = require('./zScoreEngine');
+const { loadBalancer } = require('./provider');
 
-const provider = new ethers.JsonRpcProvider(config.rpcUrl);
 const AAVE_PREMIUM = 0.0009; // Aave V3 flash loan premium is 0.09%
 
 /**
@@ -63,14 +63,14 @@ async function isProfitable(netProfit, pair) {
 async function simulateTransaction(contractAddress, calldata) {
     log('Simulating transaction off-chain...');
     try {
-        await provider.call({
+        await loadBalancer.makeRequest('eth_call', [{
             to: contractAddress,
             data: calldata,
-        });
+        }, 'latest']);
         log('Transaction simulation successful.');
         return true;
     } catch (error) {
-        log(`Transaction simulation failed: ${error.message}`);
+        log(`Transaction simulation failed: ${error.reason || error.message}`);
         return false;
     }
 }
@@ -78,14 +78,15 @@ async function simulateTransaction(contractAddress, calldata) {
 /**
  * Estimates the gas cost of a transaction.
  * @param {ethers.TransactionRequest} tx The transaction object.
- * @returns {Promise<BigInt>} The estimated gas cost in the native token.
+ *p- * @returns {Promise<BigInt>} The estimated gas cost in the native token.
  */
 async function estimateGasCost(tx) {
-    const [gasLimit, feeData] = await Promise.all([
-        provider.estimateGas(tx),
-        provider.getFeeData()
+    const [gasLimitHex, gasPriceHex] = await Promise.all([
+        loadBalancer.makeRequest('eth_estimateGas', [tx]),
+        loadBalancer.makeRequest('eth_gasPrice', [])
     ]);
-    const gasPrice = feeData.gasPrice || feeData.maxFeePerGas;
+    const gasLimit = BigInt(gasLimitHex);
+    const gasPrice = BigInt(gasPriceHex);
     return gasLimit * gasPrice;
 }
 
