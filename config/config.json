@@ -1,0 +1,25 @@
+{
+  "contractAddress": {
+    "base": "",
+    "baseSepolia": ""
+  },
+  "hubAssets": [
+    "WETH",
+    "USDC",
+    "cbETH"
+  ],
+  "slippageBuffer": 0.001,
+  "profitThreshold": 0.4,
+  "zScoreThreshold": 2.5,
+  "scanAmount": "1",
+  "aggregatorUrls": {
+    "odos": "https://api.odos.xyz/",
+    "oneInch": "https://api.1inch.exchange/v5.0/",
+    "cowSwap": "https://api.cow.fi/mainnet/api/v1/"
+  },
+  "mevProtection": {
+    "flashbots": "https://rpc.flashbots.net",
+    "mevShare": "https://mev-share.flashbots.net",
+    "bloXroute": "https://api.blxrbdn.com"
+  }
+}

@@ -1,0 +1,16 @@
+# Node
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Hardhat
+cache/
+artifacts/
+coverage/
+coverage.json
+typechain-types/
+
+# Environment
+.env
