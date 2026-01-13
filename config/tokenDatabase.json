@@ -1,1 +1,395 @@
-{}
+{
+  "0xc3De830EA07524a0761646a6a4e4be0e114a3C83": {
+    "symbol": "UNI",
+    "name": "Uniswap",
+    "pairs": {
+      "0x0c41F1FC9022FEB69aF6dc666aBfE73C9FFDA7ce": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 150155.03999999972
+  },
+  "0x0c41F1FC9022FEB69aF6dc666aBfE73C9FFDA7ce": {
+    "symbol": "BTCB",
+    "name": "Bitcoin on Base",
+    "pairs": {
+      "0xc3De830EA07524a0761646a6a4e4be0e114a3C83": {
+        "dex": "uniswap"
+      },
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 509680243.94000316
+  },
+  "CkfVxeuaZjo9xLBwLKgv42nLZ2ChsuGSCucNeQ1cbonk": {
+    "symbol": "FRANKLIN",
+    "name": "Franklin the Based Turtle",
+    "pairs": {
+      "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB": {
+        "dex": "uniswap"
+      },
+      "So11111111111111111111111111111111111111112": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 91267665.77999859
+  },
+  "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB": {
+    "symbol": "USD1",
+    "name": "World Liberty Financial USD",
+    "pairs": {
+      "CkfVxeuaZjo9xLBwLKgv42nLZ2ChsuGSCucNeQ1cbonk": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 79955291.97999993
+  },
+  "0xD769d56f479E9E72a77bB1523e866A33098Feec5": {
+    "symbol": "Base is for everyone",
+    "name": "Base is for everyone",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 263890735.1999932
+  },
+  "0x4200000000000000000000000000000000000006": {
+    "symbol": "WETH",
+    "name": "Wrapped Ether",
+    "pairs": {
+      "0xD769d56f479E9E72a77bB1523e866A33098Feec5": {
+        "dex": "uniswap"
+      },
+      "0x0c41F1FC9022FEB69aF6dc666aBfE73C9FFDA7ce": {
+        "dex": "uniswap"
+      },
+      "0x5B5dee44552546ECEA05EDeA01DCD7Be7aa6144A": {
+        "dex": "uniswap"
+      },
+      "0x315B8c9A1123c10228d469551033440441b41F0b": {
+        "dex": "uniswap"
+      },
+      "0x0B4D676eEBf9bf99a70dA085E1D2381190F7D3bb": {
+        "dex": "uniswap"
+      },
+      "0xf5C83eA805e5aeFf5De24C7Da23eF246C2BF8Ec7": {
+        "dex": "uniswap"
+      },
+      "0xd4306991f8a5CEF2d2bCB3262224dEd11BD18baD": {
+        "dex": "uniswap"
+      },
+      "0xEecC15f24B8fE65CFd18d4095f91a7ADEFDd53D5": {
+        "dex": "uniswap"
+      },
+      "0x8d285Df5bE4570097E84241090FCa8034AB18547": {
+        "dex": "uniswap"
+      },
+      "0x1791B55e734DF69B4906a4178A83dbE63c4F8421": {
+        "dex": "uniswap"
+      },
+      "0x02537463e57a44f861Ee861Ba4F590C413f984a6": {
+        "dex": "uniswap"
+      },
+      "0x1ceF2e5591AeB84a90711fFa5B80663CF7075F84": {
+        "dex": "uniswap"
+      },
+      "0x8b978aE767588afDe3ac54DF778D6B01E1bc01bf": {
+        "dex": "uniswap"
+      },
+      "0x16172d2B795BEB55010994C0A773c379b59ccbC8": {
+        "dex": "uniswap"
+      },
+      "0xE96d1098855c096E03fA9a9900c85719CfD7c776": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 4280522399.379993
+  },
+  "0x5B5dee44552546ECEA05EDeA01DCD7Be7aa6144A": {
+    "symbol": "TN100x",
+    "name": "The Next 100x Memecoin on Base",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 99683843.27000023
+  },
+  "0x315B8c9A1123c10228d469551033440441b41F0b": {
+    "symbol": "BEATS",
+    "name": "BEATS on BASE",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 180753725.5999986
+  },
+  "0x8C32bcFC720FEC35443748A96030cE866d0665ff": {
+    "symbol": "latenightonbase",
+    "name": "latenightonbase",
+    "pairs": {
+      "0x1111111111166b7FE7bd91427724B487980aFc69": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 92246081.06000042
+  },
+  "0x1111111111166b7FE7bd91427724B487980aFc69": {
+    "symbol": "ZORA",
+    "name": "Zora",
+    "pairs": {
+      "0x8C32bcFC720FEC35443748A96030cE866d0665ff": {
+        "dex": "uniswap"
+      },
+      "0x55253031a277f88C99A0E2f80bD52F872C402FD9": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 219237042.21999818
+  },
+  "0x0B4D676eEBf9bf99a70dA085E1D2381190F7D3bb": {
+    "symbol": "Share",
+    "name": "Based Sharon",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 78725158.1199998
+  },
+  "0xf5C83eA805e5aeFf5De24C7Da23eF246C2BF8Ec7": {
+    "symbol": "MONSTA",
+    "name": "Based Monsta",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 61249720.98000072
+  },
+  "0xd4306991f8a5CEF2d2bCB3262224dEd11BD18baD": {
+    "symbol": "MOONBASE",
+    "name": "Moonbase",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 34378474.169999704
+  },
+  "0xEecC15f24B8fE65CFd18d4095f91a7ADEFDd53D5": {
+    "symbol": "BACHI",
+    "name": "Bachi on Base",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 56099979.039998844
+  },
+  "0x90B09B32D6a6c385dED117238ad6413B80029431": {
+    "symbol": "ANON",
+    "name": "AnonBase",
+    "pairs": {
+      "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 53925685.66000025
+  },
+  "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b": {
+    "symbol": "VIRTUAL",
+    "name": "Virtual Protocol",
+    "pairs": {
+      "0x90B09B32D6a6c385dED117238ad6413B80029431": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 53925685.66000025
+  },
+  "0x8d285Df5bE4570097E84241090FCa8034AB18547": {
+    "symbol": "ETHB",
+    "name": "ETHEREUM ON BASE",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 49378514.920000985
+  },
+  "0xAD3eB8058e9E0ad547e2aF549388Df451b00D8BD": {
+    "symbol": "SHRMN",
+    "name": "SHROOMnation",
+    "pairs": {
+      "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 49080756.19999917
+  },
+  "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf": {
+    "symbol": "cbBTC",
+    "name": "Coinbase Wrapped BTC",
+    "pairs": {
+      "0xAD3eB8058e9E0ad547e2aF549388Df451b00D8BD": {
+        "dex": "uniswap"
+      },
+      "0x93dc5Cb35627A759848c7A7F0079EA7b49E435a5": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 172397365
+  },
+  "0x1791B55e734DF69B4906a4178A83dbE63c4F8421": {
+    "symbol": "BCHB",
+    "name": "BITCOIN CASH ON BASE",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 45995580.3999996
+  },
+  "0x02537463e57a44f861Ee861Ba4F590C413f984a6": {
+    "symbol": "Broak",
+    "name": "Broak on Base",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 38967596.640000515
+  },
+  "0x1ceF2e5591AeB84a90711fFa5B80663CF7075F84": {
+    "symbol": "BLUEY ",
+    "name": "BlueyonBase",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 29772007.439999763
+  },
+  "0x8b978aE767588afDe3ac54DF778D6B01E1bc01bf": {
+    "symbol": "REPPO",
+    "name": "REPPO ON BASE",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 2364512135.299958
+  },
+  "0x55253031a277f88C99A0E2f80bD52F872C402FD9": {
+    "symbol": "uniswapfoundation",
+    "name": "uniswapfoundation",
+    "pairs": {
+      "0x1111111111166b7FE7bd91427724B487980aFc69": {
+        "dex": "uniswap"
+      },
+      "0xF41124E1c326e5044d0358d977CA02c0C5276649": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 198767668.5399942
+  },
+  "0x93dc5Cb35627A759848c7A7F0079EA7b49E435a5": {
+    "symbol": "MET",
+    "name": "Metronome2",
+    "pairs": {
+      "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 123316608.79999799
+  },
+  "0x16172d2B795BEB55010994C0A773c379b59ccbC8": {
+    "symbol": "LOTTO",
+    "name": "The Lotto On Base",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 230640223.79999632
+  },
+  "0xE96d1098855c096E03fA9a9900c85719CfD7c776": {
+    "symbol": "ASTEX",
+    "name": "ASTEX On BASE",
+    "pairs": {
+      "0x4200000000000000000000000000000000000006": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 236944615.59999627
+  },
+  "5VonUurvDJ9cLeqqfhzwykSBub9hDERNsntyX9pFNK35": {
+    "symbol": "BRETT",
+    "name": "Brett (Based)",
+    "pairs": {
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 472364035105.0563
+  },
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": {
+    "symbol": "USDC",
+    "name": "USD Coin",
+    "pairs": {
+      "5VonUurvDJ9cLeqqfhzwykSBub9hDERNsntyX9pFNK35": {
+        "dex": "uniswap"
+      },
+      "G4Jpb7fe5ipRRyRGLz3umw8THqH5boXSFSpqNdurpxFT": {
+        "dex": "uniswap"
+      },
+      "92iWkvFp3dvPD1nbFNqnpbW6iUvX3RWoNXKdoH3w9Zjg": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 539327820858.67706
+  },
+  "G4Jpb7fe5ipRRyRGLz3umw8THqH5boXSFSpqNdurpxFT": {
+    "symbol": "MOODENG",
+    "name": "Moodeng on Base",
+    "pairs": {
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 10563282441.320007
+  },
+  "92iWkvFp3dvPD1nbFNqnpbW6iUvX3RWoNXKdoH3w9Zjg": {
+    "symbol": "B3",
+    "name": "B3 (Base)",
+    "pairs": {
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 56400503312.29908
+  },
+  "0xF41124E1c326e5044d0358d977CA02c0C5276649": {
+    "symbol": "DUNI",
+    "name": "Reimagining DAOs",
+    "pairs": {
+      "0x55253031a277f88C99A0E2f80bD52F872C402FD9": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 71776707.37999973
+  },
+  "So11111111111111111111111111111111111111112": {
+    "symbol": "SOL",
+    "name": "Wrapped SOL",
+    "pairs": {
+      "CkfVxeuaZjo9xLBwLKgv42nLZ2ChsuGSCucNeQ1cbonk": {
+        "dex": "uniswap"
+      }
+    },
+    "liquidity": 11312373.799999803
+  }
+}

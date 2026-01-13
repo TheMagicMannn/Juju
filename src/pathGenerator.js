@@ -102,14 +102,10 @@ class PathGenerator {
     }
 }
 
-async function generateAndCachePaths(config) {
-    const dbPath = path.join(__dirname, '../config/tokenDatabase.json');
+async function generateAndCachePaths(config, tokenDatabase) {
     const pathsPath = path.join(__dirname, '../config/paths.json');
 
     try {
-        const dbFile = await fs.readFile(dbPath, 'utf8');
-        const tokenDatabase = JSON.parse(dbFile);
-
         const pathGenerator = new PathGenerator(tokenDatabase, config.hubAssets);
         const paths = pathGenerator.generatePaths();
 
@@ -118,11 +114,8 @@ async function generateAndCachePaths(config) {
         return paths;
 
     } catch (error) {
-        if (error.code === 'ENOENT') {
-            log('Token database not found. Please run the database build step first.');
-            return [];
-        }
-        throw error;
+        log(`Error generating paths: ${error.message}`);
+        return [];
     }
 }
 
