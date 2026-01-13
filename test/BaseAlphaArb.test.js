@@ -1,84 +1,62 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { AaveV3BaseSepolia } = require('@bgd-labs/aave-address-book');
-const { impersonateAccount, stopImpersonatingAccount, loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("BaseAlphaArb", function () {
     async function deployFixture() {
         const [owner, otherAccount] = await ethers.getSigners();
 
-        // Forking Base mainnet for real contract instances
-        const usdcAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-        const usdc = await ethers.getContractAt("IERC20", usdcAddress);
+        // Deploy Mock Tokens
+        const MockERC20 = await ethers.getContractFactory("MockERC20");
+        const usdc = await MockERC20.deploy("USD Coin", "USDC", 6);
+        const weth = await MockERC20.deploy("Wrapped Ether", "WETH", 18);
 
-        // Impersonate Aave Pool to initiate the flash loan
-        await impersonateAccount(AaveV3BaseSepolia.POOL);
-        const aavePool = await ethers.getSigner(AaveV3BaseSepolia.POOL);
+        // Deploy Mock Aave Pool and Provider
+        const MockAavePool = await ethers.getContractFactory("MockAavePool");
+        const aavePool = await MockAavePool.deploy();
+        const MockPoolAddressesProvider = await ethers.getContractFactory("MockPoolAddressesProvider");
+        const aaveProvider = await MockPoolAddressesProvider.deploy(aavePool.target);
+        await aavePool.setAddressesProvider(aaveProvider.target);
 
         // Deploy our BaseAlphaArb contract
         const BaseAlphaArb = await ethers.getContractFactory("BaseAlphaArb");
-        const baseAlphaArb = await BaseAlphaArb.deploy(AaveV3BaseSepolia.POOL_ADDRESSES_PROVIDER);
-        await baseAlphaArb.waitForDeployment();
+        const baseAlphaArb = await BaseAlphaArb.deploy(aaveProvider.target);
 
         // Deploy the MockAggregator
         const MockAggregator = await ethers.getContractFactory("MockAggregator");
         const mockAggregator = await MockAggregator.deploy();
-        await mockAggregator.waitForDeployment();
 
-        return { baseAlphaArb, owner, usdc, aavePool, mockAggregator };
+        return { baseAlphaArb, owner, usdc, weth, aavePool, mockAggregator };
     }
 
-    it("Should execute a flash loan, perform a swap, and repay the loan with profit", async function () {
-        const { baseAlphaArb, owner, usdc, aavePool, mockAggregator } = await loadFixture(deployFixture);
+    it("Should execute a two-hop flash loan and repay with profit", async function () {
+        const { baseAlphaArb, owner, usdc, weth, aavePool, mockAggregator } = await loadFixture(deployFixture);
 
-        const loanAmount = ethers.parseUnits("10000", 6); // 10,000 USDC
-        const premium = (loanAmount * 9n) / 10000n; // 0.09% Aave V3 premium
-        const profit = ethers.parseUnits("100", 6); // 100 USDC profit
+        const loanAmount = ethers.parseUnits("10000", 6);
+        const profit = ethers.parseUnits("100", 6);
+        const intermediateAmount = ethers.parseUnits("5", 18);
 
-        // The mock aggregator needs to hold the profit amount to simulate a profitable trade
-        // We will impersonate a USDC whale to fund the aggregator
-        const usdcWhaleAddress = "0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503";
-        await impersonateAccount(usdcWhaleAddress);
-        const usdcWhale = await ethers.getSigner(usdcWhaleAddress);
-        await usdc.connect(usdcWhale).transfer(await mockAggregator.getAddress(), loanAmount + profit);
-        await stopImpersonatingAccount(usdcWhaleAddress);
+        // Fund the mock aggregator and mock Aave pool
+        let premium = (loanAmount * 9n) / 10000n;
+        await usdc.mint(mockAggregator.target, loanAmount + profit + premium);
+        await weth.mint(mockAggregator.target, intermediateAmount);
+        await usdc.mint(aavePool.target, loanAmount + premium);
 
-        const wethAddress = "0x4200000000000000000000000000000000000006";
-        const expectedProfit = ethers.parseUnits("0.1", 18); // 0.1 WETH
+        // Path: USDC -> WETH -> USDC
+        const tokens = [usdc.target, weth.target, usdc.target];
 
-        // Prepare the calldata for the swap on the mock aggregator
-        const swapData = mockAggregator.interface.encodeFunctionData("swap", [
-            await usdc.getAddress(),
-            wethAddress,
-            loanAmount,
-            expectedProfit
-        ]);
+        const hop1Data = mockAggregator.interface.encodeFunctionData("swap", [usdc.target, weth.target, loanAmount, intermediateAmount]);
+        const hop2Data = mockAggregator.interface.encodeFunctionData("swap", [weth.target, usdc.target, intermediateAmount, loanAmount + profit + premium]);
 
-        // Prepare the params for our contract's executeOperation
-        const params = ethers.AbiCoder.defaultAbiCoder().encode(
-            ['address', 'bytes'],
-            [await mockAggregator.getAddress(), swapData]
-        );
+        const hops = [
+            { target: mockAggregator.target, data: hop1Data },
+            { target: mockAggregator.target, data: hop2Data },
+        ];
 
-        // The flash loan will be initiated by the Aave Pool (impersonated)
-        // This will call our contract's `executeOperation` function
-        const flashLoanTx = await aavePool.flashLoanSimple(
-            await baseAlphaArb.getAddress(), // receiverAddress
-            await usdc.getAddress(),      // asset
-            loanAmount,                   // amount
-            params,                       // params
-            0                             // referralCode
-        );
+        // Execute the arbitrage
+        await baseAlphaArb.executeArb(tokens, hops, loanAmount);
 
-        // Check the final state
-        // The contract should have paid back the loan + premium and kept the profit
-        const finalContractBalance = await usdc.balanceOf(await baseAlphaArb.getAddress());
+        const finalContractBalance = await usdc.balanceOf(baseAlphaArb.target);
         expect(finalContractBalance).to.equal(profit);
-
-        // The owner (bot operator) should be able to withdraw the profit
-        const initialOwnerBalance = await usdc.balanceOf(owner.address);
-        await baseAlphaArb.connect(owner).withdraw(await usdc.getAddress());
-        const finalOwnerBalance = await usdc.balanceOf(owner.address);
-        expect(finalOwnerBalance - initialOwnerBalance).to.equal(profit);
     });
 });

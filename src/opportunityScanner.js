@@ -1,195 +1,147 @@
 const { ethers } = require('ethers');
+const fs = require('fs/promises');
+const path = require('path');
 const config = require('./config');
 const { log, withErrorHandling } = require('./utils');
-const { getVolatileTokens } = require('./tokenManager');
 const aggregatorService = require('./aggregatorService');
 const dexService = require('./dexService');
 const { calculateNetProfit, isProfitable, simulateTransaction, estimateGasCost } = require('./profitCalculator');
 
-
 /**
- * Generates triangular and multi-hop trading paths.
- * @param {string} hub The hub asset.
- * @param {Array<object>} volatiles The list of volatile tokens.
- * @returns {Array<Array<string>>} A list of trading paths.
+ * Gets the best quote for a single hop from all available DEXs and aggregators.
+ * @param {string} fromToken The address of the token to sell.
+ * @param {string} toToken The address of the token to buy.
+ * @param {string} amountIn The amount to sell.
+ * @param {string} preferredDex The DEX specified in the path.
+ * @returns {Promise<object|null>} The best quote found.
  */
-function generatePaths(hub, volatiles) {
-    const paths = [];
-    // Simple triangular paths for now: Hub -> Volatile -> Hub
-    volatiles.forEach(volatile => {
-        paths.push([hub, volatile.symbol, hub]);
-    });
-    // More complex multi-hop paths can be generated here.
-    return paths;
-}
+async function getBestHopQuote(fromToken, toToken, amountIn, preferredDex) {
+    const quoteFunctions = {
+        '1inch': (from, to, amount) => aggregatorService.get1inchQuote(from, to, amount),
+        'odos': (from, to, amount) => aggregatorService.getOdosQuote(from, to, amount),
+        'cowswap': (from, to, amount) => aggregatorService.getCowQuote(from, to, amount),
+        'uniswap': (from, to, amount) => dexService.getUniswapQuote(from, to, amount),
+        'aerodrome': (from, to, amount) => dexService.getAerodromeQuote(from, to, amount),
+        'pancakeswap': (from, to, amount) => dexService.getPancakeSwapQuote(from, to, amount),
+    };
 
-
-/**
- * Finds the best quotes from all aggregators for a given trading path.
- * @param {Array<string>} path The trading path.
- * @param {string} amountIn The amount to trade.
- * @returns {Promise<Array<object>>} A list of quotes from the aggregators.
- */
-async function findBestQuotes(path, amountIn) {
-    const [from, to] = path;
-    const quotes = await Promise.all([
-        aggregatorService.get1inchQuote(from, to, amountIn),
-        aggregatorService.getOdosQuote(from, to, amountIn),
-        aggregatorService.getCowQuote(from, to, amountIn),
-        dexService.getUniswapQuote(from, to, amountIn),
-        dexService.getAerodromeQuote(from, to, amountIn),
-        dexService.getPancakeSwapQuote(from, to, amountIn),
-    ]);
-    return quotes.filter(q => q); // Filter out any failed quotes
-}
-
-
-/**
- * Checks for consensus among the aggregator quotes.
- * Requires at least 2/3 of aggregators to agree on the route and output.
- * @param {Array<object>} quotes The list of quotes.
- * @returns {object|null} The consensus quote or null if no consensus is reached.
- */
-function checkConsensus(quotes, consensusThreshold = 2 / 3, tolerance = 0.01) {
-    if (quotes.length === 0) {
-        return null;
+    const quotes = [];
+    if (quoteFunctions[preferredDex]) {
+        quotes.push(await quoteFunctions[preferredDex](fromToken, toToken, amountIn));
+    } else {
+        log(`Warning: Unknown DEX '${preferredDex}' specified in path.`);
+        // Fallback to all if the preferred one is not found or fails
+        for (const fn of Object.values(quoteFunctions)) {
+            quotes.push(await fn(fromToken, toToken, amountIn));
+        }
     }
 
-    // Sort quotes from best to worst based on output amount
-    quotes.sort((a, b) => BigInt(b.toTokenAmount) < BigInt(a.toTokenAmount) ? -1 : 1);
+    const validQuotes = quotes.filter(q => q && q.toTokenAmount);
+    if (validQuotes.length === 0) return null;
 
-    const bestQuote = quotes[0];
-    const bestAmount = BigInt(bestQuote.toTokenAmount);
-
-    // Find how many other quotes are within the tolerance of the best quote
-    const agreeingQuotes = quotes.filter(q => {
-        const amount = BigInt(q.toTokenAmount);
-        const difference = bestAmount > amount ? bestAmount - amount : amount - bestAmount;
-        const percentageDifference = Number(difference * 10000n / bestAmount) / 10000;
-        return percentageDifference <= tolerance;
-    });
-
-    // Check if the number of agreeing quotes meets the consensus threshold
-    if (agreeingQuotes.length / quotes.length >= consensusThreshold) {
-        log(`Consensus reached: ${agreeingQuotes.length}/${quotes.length} aggregators agree.`);
-        return bestQuote;
-    }
-
-    log(`No consensus: only ${agreeingQuotes.length}/${quotes.length} aggregators agreed.`);
-    return null;
-}
-
-
-/**
- * Evaluates a potential arbitrage opportunity.
- * @param {object} quote The consensus quote.
- * @param {string} hub The hub asset.
- * @returns {Promise<object|null>} The profitable opportunity or null.
- */
-async function evaluateOpportunity(quote, hub) {
-    let swapData;
-    if (quote.aggregator === '1inch') {
-        swapData = await aggregatorService.get1inchSwap(
-            quote.fromToken.address,
-            quote.toToken.address,
-            quote.fromTokenAmount,
-            config.contractAddress.base, // The address of our contract
-            config.slippageBuffer
-        );
-    } else if (quote.aggregator === 'odos') {
-        swapData = await aggregatorService.getOdosAssemble(quote);
-    } else if (quote.aggregator === 'cowswap') {
-        // CoW Swap execution logic is not implemented.
-        // It uses a different off-chain signing mechanism (EIP-712) rather than a simple transaction.
-        // A full implementation would require a separate flow to create and sign a CoW Swap order.
-        return null;
-    } else if (quote.dex === 'uniswap') {
-        swapData = await dexService.getUniswapSwapData(
-            quote.fromToken.address,
-            quote.toToken.address,
-            quote.fromTokenAmount,
-            quote.toTokenAmount, // amountOutMinimum
-            quote.fee
-        );
-    } else if (quote.dex === 'aerodrome') {
-        swapData = await dexService.getAerodromeSwapData(
-            quote.fromToken.address,
-            quote.toToken.address,
-            quote.fromTokenAmount,
-            quote.toTokenAmount // amountOutMinimum
-        );
-    } else if (quote.dex === 'pancakeswap') {
-        swapData = await dexService.getPancakeSwapSwapData(
-            quote.fromToken.address,
-            quote.toToken.address,
-            quote.fromTokenAmount,
-            quote.toTokenAmount, // amountOutMinimum
-            quote.fee
-        );
-    }
-
-    if (!swapData) {
-        return null;
-    }
-
-    // Create the transaction object to estimate gas
-    const contract = new ethers.Contract(config.contractAddress.base, [
-        'function executeArb(address asset, uint256 amount, address aggregator, bytes calldata swapData)',
-    ]);
-    const tx = await contract.populateTransaction.executeArb(
-        quote.fromToken.address,
-        quote.fromTokenAmount,
-        swapData.tx.to,
-        swapData.tx.data
+    // Return the quote with the highest output amount
+    return validQuotes.reduce((best, current) =>
+        BigInt(current.toTokenAmount) > BigInt(best.toTokenAmount) ? current : best
     );
+}
 
+/**
+ * Evaluates a multi-hop arbitrage path for profitability.
+ * @param {Array<object>} path The arbitrage path to evaluate.
+ * @param {string} initialAmount The starting amount for the flash loan.
+ * @returns {Promise<object|null>} A profitable opportunity object or null.
+ */
+async function evaluatePath(path, initialAmount) {
+    let currentAmount = initialAmount;
+    const executedHops = [];
+    const tokens = [path[0].from];
+
+    for (const hop of path) {
+        const quote = await getBestHopQuote(hop.from, hop.to, currentAmount.toString(), hop.dex);
+        if (!quote) {
+            log(`No quote found for hop ${hop.from} -> ${hop.to}. Path evaluation failed.`);
+            return null; // This hop is not viable, so the path fails
+        }
+
+        if (quote.aggregator === 'cowswap') {
+            log(`Skipping path due to CoW Swap hop: ${hop.from} -> ${hop.to}.`);
+            return null;
+        }
+
+        let swapData;
+        if (quote.aggregator === 'odos') {
+            swapData = await aggregatorService.getOdosAssemble(quote);
+        } else if (quote.dex === 'uniswap') {
+            swapData = await dexService.getUniswapSwapData(hop.from, hop.to, currentAmount, quote.toTokenAmount, quote.fee);
+        } else if (quote.dex === 'aerodrome') {
+            swapData = await dexService.getAerodromeSwapData(hop.from, hop.to, currentAmount, quote.toTokenAmount);
+        } else if (quote.dex === 'pancakeswap') {
+            swapData = await dexService.getPancakeSwapSwapData(hop.from, hop.to, currentAmount, quote.toTokenAmount, quote.fee);
+        }
+
+        if (!swapData || !swapData.tx) {
+            log(`Failed to get swap data for hop ${hop.from} -> ${hop.to}.`);
+            return null;
+        }
+
+        executedHops.push({ target: swapData.tx.to, data: swapData.tx.data });
+        tokens.push(hop.to);
+        currentAmount = BigInt(quote.toTokenAmount);
+    }
+
+    const finalAmount = currentAmount;
+    const contract = new ethers.Contract(config.contractAddress.base, [
+        'function executeArb(address[] calldata tokens, Hop[] calldata hops, uint256 amount)',
+    ]);
+    const tx = await contract.populateTransaction.executeArb(tokens, executedHops, initialAmount);
     const gasEstimate = await estimateGasCost(tx);
 
-    const { netProfit } = calculateNetProfit(
-        BigInt(quote.toTokenAmount),
-        BigInt(quote.fromTokenAmount),
-        gasEstimate
-    );
+    const { netProfit } = calculateNetProfit(finalAmount, BigInt(initialAmount), gasEstimate);
 
-    if (await isProfitable(netProfit, `${quote.fromToken.symbol}/${quote.toToken.symbol}`)) {
-        if (await simulateTransaction(config.contractAddress[config.network], swapData.tx.data)) {
-            return { ...quote, netProfit, swapData };
+    if (isProfitable(netProfit, `${tokens[0]}/${tokens[tokens.length - 1]}`)) {
+        if (await simulateTransaction(config.contractAddress[config.network], tx.data)) {
+            return {
+                netProfit,
+                initialAmount,
+                finalAmount,
+                tokens,
+                hops: executedHops,
+            };
         }
     }
     return null;
 }
 
-
 /**
- * Scans all hub assets for arbitrage opportunities.
+ * Scans all cached arbitrage paths for profitable opportunities.
  * @returns {Promise<Array<object>>} A list of profitable opportunities.
  */
-async function scanAllHubs() {
-    log('Scanning for arbitrage opportunities...');
+async function scanAllPaths() {
+    log('Scanning all cached paths for arbitrage opportunities...');
     const opportunities = [];
-    const volatiles = getVolatileTokens();
+    const pathsPath = path.join(__dirname, '../config/paths.json');
 
-    for (const hub of config.hubAssets) {
-        const paths = generatePaths(hub, volatiles);
+    try {
+        const data = await fs.readFile(pathsPath, 'utf8');
+        const paths = JSON.parse(data);
+        const initialAmount = ethers.parseUnits(config.scanAmount, 'ether').toString(); // Example: 1 WETH
+
         for (const path of paths) {
-            const amountIn = ethers.parseUnits(config.scanAmount, 'ether').toString();
-
-            const quotes = await findBestQuotes(path, amountIn);
-            const consensusQuote = checkConsensus(quotes);
-
-            if (consensusQuote) {
-                const opportunity = await evaluateOpportunity(consensusQuote, hub);
-                if (opportunity) {
-                    opportunities.push(opportunity);
-                }
+            if (!path || path.length === 0) continue;
+            const opportunity = await evaluatePath(path, initialAmount);
+            if (opportunity) {
+                opportunities.push(opportunity);
+                log(`Found profitable opportunity: ${opportunity.netProfit.toString()} profit.`);
             }
         }
+    } catch (error) {
+        log(`Error scanning paths: ${error.message}`);
     }
 
-    log(`Found ${opportunities.length} profitable opportunities.`);
+    log(`Found ${opportunities.length} total profitable opportunities.`);
     return opportunities;
 }
 
 module.exports = {
-    scanAllHubs: withErrorHandling(scanAllHubs),
+    scanAllPaths: withErrorHandling(scanAllPaths),
 };

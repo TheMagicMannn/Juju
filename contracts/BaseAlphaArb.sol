@@ -35,21 +35,27 @@ contract BaseAlphaArb is FlashLoanSimpleReceiverBase, Ownable, Pausable, Reentra
         Ownable(msg.sender)
     {}
 
+    /// @dev Defines a single hop in a multi-hop swap path.
+    struct Hop {
+        address target; // The DEX/aggregator router address
+        bytes data;     // The calldata for the swap
+    }
+
     /**
-     * @notice Initiates a flash loan and the subsequent arbitrage trade.
+     * @notice Initiates a flash loan for a multi-hop arbitrage trade.
      * @dev Can only be called by the owner (the off-chain bot).
-     * @param asset The address of the token to be borrowed.
-     * @param amount The amount of the token to be borrowed.
-     * @param aggregator The address of the DEX aggregator router to execute the swap.
-     * @param swapData The calldata for the swap to be executed by the aggregator.
+     * @param tokens The sequence of token addresses in the trade path (e.g., [USDC, WETH, USDC]).
+     * @param hops The sequence of swaps to be executed.
+     * @param amount The amount of the initial token to be borrowed.
      */
     function executeArb(
-        address asset,
-        uint256 amount,
-        address aggregator,
-        bytes calldata swapData
+        address[] calldata tokens,
+        Hop[] calldata hops,
+        uint256 amount
     ) external onlyOwner whenNotPaused nonReentrant {
-        bytes memory params = abi.encode(aggregator, swapData);
+        require(tokens.length == hops.length + 1, "Invalid path: tokens and hops length mismatch");
+        address asset = tokens[0];
+        bytes memory params = abi.encode(tokens, hops);
 
         POOL.flashLoanSimple(
             address(this), // receiverAddress
@@ -62,14 +68,12 @@ contract BaseAlphaArb is FlashLoanSimpleReceiverBase, Ownable, Pausable, Reentra
 
     /**
      * @notice This function is called by the Aave V3 Pool after the flash loan is funded.
-     * It executes the arbitrage trade and repays the loan.
-     * @dev This function's execution is wrapped by the FlashLoanSimpleReceiverBase,
-     * which ensures the loan is repaid.
+     * It executes the full sequence of arbitrage trades and repays the loan.
      * @param asset The address of the token that was borrowed.
      * @param amount The amount of the token that was borrowed.
      * @param premium The fee charged by Aave for the flash loan.
      * @param initiator The address that initiated the flash loan (this contract).
-     * @param params The encoded data passed from executeArb, containing aggregator and swapData.
+     * @param params The encoded data passed from executeArb, containing the token path and hops.
      * @return A boolean indicating the success of the operation.
      */
     function executeOperation(
@@ -82,17 +86,26 @@ contract BaseAlphaArb is FlashLoanSimpleReceiverBase, Ownable, Pausable, Reentra
         require(msg.sender == address(POOL), "Not from Aave Pool");
         require(initiator == address(this), "Invalid initiator");
 
-        // Decode parameters
-        (address aggregator, bytes memory swapData) = abi.decode(params, (address, bytes));
+        (address[] memory tokens, Hop[] memory hops) = abi.decode(params, (address[], Hop[]));
 
-        // 1. Approve the aggregator to spend the borrowed funds
-        IERC20(asset).approve(aggregator, amount);
+        // Execute all swaps in the multi-hop path
+        for (uint i = 0; i < hops.length; i++) {
+            address fromToken = tokens[i];
+            Hop memory hop = hops[i];
 
-        // 2. Execute the multi-hop swap via the aggregator
-        (bool success, ) = aggregator.call(swapData);
-        require(success, "Swap failed");
+            // Approve the target to spend the full balance of the fromToken
+            uint256 amountIn = IERC20(fromToken).balanceOf(address(this));
+            IERC20(fromToken).approve(hop.target, amountIn);
 
-        // 3. Check profit and emit event
+            // Execute the swap
+            (bool success, ) = hop.target.call(hop.data);
+            require(success, "Swap failed");
+
+            // Revoke approval for security
+            IERC20(fromToken).approve(hop.target, 0);
+        }
+
+        // Check profit and emit event
         uint256 balanceAfter = IERC20(asset).balanceOf(address(this));
         uint256 repayAmount = amount + premium;
 
@@ -100,6 +113,9 @@ contract BaseAlphaArb is FlashLoanSimpleReceiverBase, Ownable, Pausable, Reentra
 
         uint256 profit = balanceAfter - repayAmount;
         emit ArbExecuted(asset, amount, profit, true);
+
+        // Approve the pool to pull back the funds
+        IERC20(asset).approve(address(POOL), repayAmount);
 
         return true;
     }
