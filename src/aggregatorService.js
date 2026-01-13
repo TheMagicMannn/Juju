@@ -1,6 +1,7 @@
 const axios = require('axios');
 const config = require('./config');
 const { log, withErrorHandling } = require('./utils');
+const dexAggregators = require('./utils/dexAggregators');
 const { wallet } = require('./bot');
 
 const oneInchApi = axios.create({
@@ -29,6 +30,7 @@ const cowSdk = new TradingSdk({
  * @returns {Promise<object>} The quote from 1inch.
  */
 const get1inchQuote = async (fromTokenAddress, toTokenAddress, amount) => {
+    await dexAggregators.oneInch.limiter.acquire();
     const params = { fromTokenAddress, toTokenAddress, amount };
     const response = await oneInchApi.get('quote', { params });
     return { aggregator: '1inch', ...response.data };
@@ -44,6 +46,7 @@ const get1inchQuote = async (fromTokenAddress, toTokenAddress, amount) => {
  * @returns {Promise<object>} The swap data from 1inch.
  */
 const get1inchSwap = async (fromTokenAddress, toTokenAddress, amount, fromAddress, slippage) => {
+    await dexAggregators.oneInch.limiter.acquire();
     const params = {
         fromTokenAddress,
         toTokenAddress,
@@ -64,6 +67,7 @@ const get1inchSwap = async (fromTokenAddress, toTokenAddress, amount, fromAddres
  * @returns {Promise<object>} The quote from Odos.
  */
 const getOdosQuote = async (fromTokenAddress, toTokenAddress, amount) => {
+    await dexAggregators.odos.limiter.acquire();
     const quoteRequestBody = {
         chainId: 8453, // Base mainnet
         inputTokens: [
@@ -99,6 +103,7 @@ const getOdosQuote = async (fromTokenAddress, toTokenAddress, amount) => {
  * @returns {Promise<object>} The assembled transaction data from Odos.
  */
 const getOdosAssemble = async (quote) => {
+    await dexAggregators.odos.limiter.acquire();
     const assembleRequestBody = {
         userAddr: config.contractAddress[config.network], // The address of our contract
         pathId: quote.pathId,
@@ -122,6 +127,7 @@ const getOdosAssemble = async (quote) => {
  * @returns {Promise<object>} The quote from CoW Swap.
  */
 const getCowQuote = async (fromTokenAddress, toTokenAddress, amount) => {
+    await dexAggregators.cowSwap.quoteLimiter.acquire();
     try {
         const quote = await cowSdk.getQuote({
             sellToken: fromTokenAddress,
