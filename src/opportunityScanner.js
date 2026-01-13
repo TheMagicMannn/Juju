@@ -49,9 +49,13 @@ async function getBestHopQuote(fromToken, toToken, amountIn, preferredDex) {
  * Evaluates a multi-hop arbitrage path for profitability.
  * @param {Array<object>} path The arbitrage path to evaluate.
  * @param {string} initialAmount The starting amount for the flash loan.
+ * @param {object} tokenDatabase The token database for symbol lookups.
  * @returns {Promise<object|null>} A profitable opportunity object or null.
  */
-async function evaluatePath(path, initialAmount) {
+async function evaluatePath(path, initialAmount, tokenDatabase) {
+    const pathSymbols = path.map(hop => tokenDatabase[hop.from]?.symbol || hop.from).join(' -> ') + ` -> ${tokenDatabase[path[path.length - 1].to]?.symbol || path[path.length - 1].to}`;
+    log(`Scanning Path: ${pathSymbols}`);
+
     let currentAmount = initialAmount;
     const executedHops = [];
     const tokens = [path[0].from];
@@ -97,6 +101,7 @@ async function evaluatePath(path, initialAmount) {
     const gasEstimate = await estimateGasCost(tx);
 
     const { netProfit } = calculateNetProfit(finalAmount, BigInt(initialAmount), gasEstimate);
+    log(`Path Result: Net profit of ${ethers.formatUnits(netProfit, 18)} ${tokenDatabase[tokens[0]]?.symbol || tokens[0]} calculated.`);
 
     if (isProfitable(netProfit, `${tokens[0]}/${tokens[tokens.length - 1]}`)) {
         if (await simulateTransaction(config.contractAddress[config.network], tx.data)) {
@@ -114,21 +119,20 @@ async function evaluatePath(path, initialAmount) {
 
 /**
  * Scans all cached arbitrage paths for profitable opportunities.
+ * @param {Array<Array<object>>} paths The array of arbitrage paths to scan.
+ * @param {object} tokenDatabase The token database for symbol lookups.
  * @returns {Promise<Array<object>>} A list of profitable opportunities.
  */
-async function scanAllPaths() {
+async function scanAllPaths(paths, tokenDatabase) {
     log('Scanning all cached paths for arbitrage opportunities...');
     const opportunities = [];
-    const pathsPath = path.join(__dirname, '../config/paths.json');
 
     try {
-        const data = await fs.readFile(pathsPath, 'utf8');
-        const paths = JSON.parse(data);
         const initialAmount = ethers.parseUnits(config.scanAmount, 'ether').toString(); // Example: 1 WETH
 
         for (const path of paths) {
             if (!path || path.length === 0) continue;
-            const opportunity = await evaluatePath(path, initialAmount);
+            const opportunity = await evaluatePath(path, initialAmount, tokenDatabase);
             if (opportunity) {
                 opportunities.push(opportunity);
                 log(`Found profitable opportunity: ${opportunity.netProfit.toString()} profit.`);

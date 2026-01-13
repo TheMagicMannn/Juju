@@ -19,7 +19,9 @@ async function fetchAllPairs(dexIds) {
             let hasMore = true;
 
             while (hasMore) {
-                const url = `${DEXSCREENER_API_URL}pairs/base/${dexId}?page=${page}`;
+                // Corrected endpoint using search functionality
+                const query = `${dexId} pairs on base`;
+                const url = `${DEXSCREENER_API_URL}search?q=${encodeURIComponent(query)}&page=${page}`;
                 const response = await axios.get(url);
                 const { pairs } = response.data;
 

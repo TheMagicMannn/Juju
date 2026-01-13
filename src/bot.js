@@ -55,11 +55,13 @@ async function handleOpportunity(opportunity) {
 
 /**
  * The main scanning loop.
+ * @param {Array<Array<object>>} paths The array of arbitrage paths to scan.
+ * @param {object} tokenDatabase The token database for symbol lookups.
  */
-async function startScanning() {
+async function startScanning(paths, tokenDatabase) {
     log('Starting scanner...');
     while (true) {
-        const opportunities = await scanAllPaths();
+        const opportunities = await scanAllPaths(paths, tokenDatabase);
         if (opportunities && opportunities.length > 0) {
             // Sort by net profit and handle the best one
             opportunities.sort((a, b) => b.netProfit - a.netProfit);
@@ -80,12 +82,15 @@ async function main() {
 
     // Build the token and pair database
     const tokenDbPath = path.join(__dirname, '../config/tokenDatabase.json');
+    let tokenDatabase;
     try {
-        await fs.access(tokenDbPath);
+        const dbData = await fs.readFile(tokenDbPath, 'utf-8');
+        tokenDatabase = JSON.parse(dbData);
+        log('Token database loaded from file.');
     } catch (error) {
-        log('Token database not found. Building it now...');
+        log('Token database not found or invalid. Building it now...');
         const dexIds = ['uniswap', 'aerodrome', 'pancakeswap'];
-        const tokenDatabase = await fetchAllPairs(dexIds);
+        tokenDatabase = await fetchAllPairs(dexIds);
         await fs.writeFile(tokenDbPath, JSON.stringify(tokenDatabase, null, 2));
         log(`Token database saved to ${tokenDbPath}`);
     }
@@ -105,10 +110,16 @@ async function main() {
 
     if (needsUpdate) {
         log('Arbitrage paths are outdated or missing. Regenerating...');
-        await generateAndCachePaths(config);
+        await generateAndCachePaths(config, tokenDatabase);
     } else {
         log('Arbitrage paths are up to date.');
     }
+
+    // Load the generated paths
+    const pathsData = await fs.readFile(pathsPath, 'utf-8');
+    const paths = JSON.parse(pathsData);
+
+    log(`Loaded ${paths.length} arbitrage paths.`);
 
     // Graceful shutdown handling
     process.on('SIGINT', () => {
@@ -122,7 +133,7 @@ async function main() {
     });
 
     try {
-        await startScanning();
+        await startScanning(paths, tokenDatabase);
     } catch (error) {
         log(`An unexpected error occurred in the main loop: ${error.message}`);
         log('Restarting in 10 seconds...');
