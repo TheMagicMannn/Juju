@@ -4,13 +4,6 @@ const { log, withErrorHandling } = require('./utils');
 const dexAggregators = require('./utils/dexAggregators');
 const { wallet } = require('./bot');
 
-const oneInchApi = axios.create({
-    baseURL: config.aggregatorUrls.oneInch,
-    headers: {
-        'Authorization': `Bearer ${config.apiKeys.oneInch}`,
-    },
-});
-
 const odosApi = axios.create({
     baseURL: config.aggregatorUrls.odos,
 });
@@ -21,43 +14,6 @@ const cowSdk = new TradingSdk({
     chainId: SupportedChainId.BASE,
     // Add other necessary config for the SDK
 });
-
-/**
- * Gets a quote from 1inch.
- * @param {string} fromTokenAddress The address of the token to sell.
- * @param {string} toTokenAddress The address of the token to buy.
- * @param {string} amount The amount to sell.
- * @returns {Promise<object>} The quote from 1inch.
- */
-const get1inchQuote = async (fromTokenAddress, toTokenAddress, amount) => {
-    await dexAggregators.oneInch.limiter.acquire();
-    const params = { fromTokenAddress, toTokenAddress, amount };
-    const response = await oneInchApi.get('quote', { params });
-    return { aggregator: '1inch', ...response.data };
-};
-
-/**
- * Gets the swap data from 1inch.
- * @param {string} fromTokenAddress The address of the token to sell.
- * @param {string} toTokenAddress The address of the token to buy.
- * @param {string} amount The amount to sell.
- * @param {string} fromAddress The address of the sender.
- * @param {number} slippage The allowed slippage.
- * @returns {Promise<object>} The swap data from 1inch.
- */
-const get1inchSwap = async (fromTokenAddress, toTokenAddress, amount, fromAddress, slippage) => {
-    await dexAggregators.oneInch.limiter.acquire();
-    const params = {
-        fromTokenAddress,
-        toTokenAddress,
-        amount,
-        fromAddress,
-        slippage,
-    };
-    const response = await oneInchApi.get('swap', { params });
-    return response.data;
-};
-
 
 /**
  * Gets a quote from Odos.
@@ -145,8 +101,6 @@ const getCowQuote = async (fromTokenAddress, toTokenAddress, amount) => {
 
 
 module.exports = {
-    get1inchQuote: withErrorHandling(get1inchQuote),
-    get1inchSwap: withErrorHandling(get1inchSwap),
     getOdosQuote: withErrorHandling(getOdosQuote),
     getOdosAssemble: withErrorHandling(getOdosAssemble),
     getCowQuote: withErrorHandling(getCowQuote),

@@ -42,7 +42,7 @@ async function getPancakeSwapSwapData(tokenIn, tokenOut, amountIn, amountOutMini
         tokenIn,
         tokenOut,
         fee,
-        recipient: wallet.address,
+        recipient: config.contractAddress[config.network],
         deadline,
         amountIn,
         amountOutMinimum,
@@ -85,10 +85,19 @@ async function getPancakeSwapQuote(tokenIn, tokenOut, amountIn) {
     }
 
     if (bestQuote > 0n) {
-        return {
-            dex: 'pancakeswap',
-            toTokenAmount: bestQuote.toString(),
-        };
+        // Find the fee that produced the best quote
+        for (const fee of fees) {
+            try {
+                const quote = await pancakeSwapV3Quoter.quoteExactInputSingle(tokenIn, tokenOut, fee, amountIn, 0);
+                if (quote === bestQuote) {
+                    return {
+                        dex: 'pancakeswap',
+                        toTokenAmount: bestQuote.toString(),
+                        fee: fee,
+                    };
+                }
+            } catch (e) { /* ignore */ }
+        }
     }
     return null;
 }
@@ -136,10 +145,19 @@ async function getUniswapQuote(tokenIn, tokenOut, amountIn) {
     }
 
     if (bestQuote > 0n) {
-        return {
-            dex: 'uniswap',
-            toTokenAmount: bestQuote.toString(),
-        };
+        // Find the fee that produced the best quote
+        for (const fee of fees) {
+            try {
+                const quote = await uniswapV3Quoter.quoteExactInputSingle(tokenIn, tokenOut, fee, amountIn, 0);
+                if (quote === bestQuote) {
+                    return {
+                        dex: 'uniswap',
+                        toTokenAmount: bestQuote.toString(),
+                        fee: fee,
+                    };
+                }
+            } catch (e) { /* ignore */ }
+        }
     }
     return null;
 }
@@ -151,7 +169,7 @@ async function getUniswapSwapData(tokenIn, tokenOut, amountIn, amountOutMinimum,
         tokenIn,
         tokenOut,
         fee,
-        recipient: wallet.address,
+        recipient: config.contractAddress[config.network],
         deadline,
         amountIn,
         amountOutMinimum,
@@ -179,7 +197,7 @@ async function getAerodromeSwapData(tokenIn, tokenOut, amountIn, amountOutMinimu
             amountIn,
             amountOutMinimum,
             path,
-            wallet.address,
+            config.contractAddress[config.network],
             deadline
         );
         return {

@@ -11,10 +11,6 @@ const dexAggregators = {
     generalLimiter: new RateLimiter(100, 60000), // 100 requests per minute
     // other config...
   },
-  oneInch: {
-    limiter: new RateLimiter(60, 60000), // 60 requests per minute
-    // other config...
-  },
 };
 
 module.exports = dexAggregators;

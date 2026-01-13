@@ -31,7 +31,6 @@ function loadConfig() {
 
     // API Keys
     const dexScreenerApiKey = process.env.DEXSCREENER_API_KEY;
-    const oneInchApiKey = process.env.ONEINCH_API_KEY;
 
     // Merge and export the final configuration object
     return {
@@ -43,7 +42,6 @@ function loadConfig() {
         },
         apiKeys: {
             dexScreener: dexScreenerApiKey,
-            oneInch: oneInchApiKey,
         },
     };
 }
